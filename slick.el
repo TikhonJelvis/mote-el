@@ -3,13 +3,58 @@
 (defvar slick/program "slick")
 (defvar slick/process nil)
 
+(defvar slick/input '())
+(defvar slick/output '())
+
+(defun slick/insertion-filter (proc string)
+  (when (buffer-live-p (process-buffer proc))
+    ;; Add to output list and execute if it parses:
+    (let* ((json-array-type 'list)
+           (output (json-read-from-string string)))
+      (unless (equal output '("Ok"))
+        (slick/execute output)
+        (add-to-list 'slick/output output)))
+
+    ;; Write to the process buffer:
+    (with-current-buffer (process-buffer proc)
+      (let ((moving (= (point) (process-mark proc))))
+        (save-excursion
+          (goto-char (process-mark proc))
+          (insert string)
+          (set-marker (process-mark proc) (point)))
+        (if moving (goto-char (process-mark proc)))))))
+
 (defun slick/init ()
   "Starts the slick process if it isn't already running."
   (unless (and slick/process (eq (process-status slick/process) 'run))
-    (setq slick/process (start-process "slick" "*slick IO*" slick/program))))
+    (setq slick/process (start-process "slick" "*slick IO*" slick/program))
+    (set-process-filter slick/process 'slick/insertion-filter)))
+
+(defun slick/stop ()
+  "Kills the slick process."
+  ;; TODO: Kill the process more gracefully?
+  (when slick/process (delete-process slick/process)))
+
+(defun slick/restart ()
+  "Kills and then inits the slick process."
+  (slick/stop)
+  (slick/init))
+
+(defun slick/execute (command)
+  "Executes a command passed back from Slick. If the given
+command isn't recognized, doesn't do anything."
+  (message "executing")
+  (message command)
+  (pcase command
+    (`("SetCursor" (x y))
+     (message "Moving!")
+     (goto-line x)
+     (forward-char (- y 1)))))
 
 (defun slick/send (message)
-  "Send the given string to the active slick process."
+  "Send the given string to the active slick process. Before
+sending the actual command, ensure the process is running and
+loads the current file."
   ;; Make sure the process is up and running:
   (slick/init)
   (process-send-string slick/process (concat (json-encode `("Load" ,(buffer-file-name))) "\n"))
@@ -17,8 +62,11 @@
 
 (defun slick/command (command &rest args)
   "Send a command as a list containing the name and arguments."
-  (message (json-encode `(,command . ,args)))
+  (add-to-list 'slick/input (json-encode `(,command . ,args)))
   (slick/send `(,command . ,args)))
+
+(defun slick/execute (command)
+  (cond ))
 
 (defun slick/client-state ()
   "Returns the current file and cursor position."
