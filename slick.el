@@ -12,8 +12,8 @@
     (let* ((json-array-type 'list)
            (output (json-read-from-string string)))
       (unless (equal output '("Ok"))
-        (slick/execute output)
-        (add-to-list 'slick/output output)))
+        (add-to-list 'slick/output output)
+        (slick/execute output)))
 
     ;; Write to the process buffer:
     (with-current-buffer (process-buffer proc)
@@ -44,9 +44,8 @@
   "Executes a command passed back from Slick. If the given
 command isn't recognized, doesn't do anything."
   (message "executing")
-  (message command)
   (pcase command
-    (`("SetCursor" (x y))
+    (`("SetCursor" (,x ,y))
      (message "Moving!")
      (goto-line x)
      (forward-char (- y 1)))))
@@ -64,9 +63,6 @@ loads the current file."
   "Send a command as a list containing the name and arguments."
   (add-to-list 'slick/input (json-encode `(,command . ,args)))
   (slick/send `(,command . ,args)))
-
-(defun slick/execute (command)
-  (cond ))
 
 (defun slick/client-state ()
   "Returns the current file and cursor position."
