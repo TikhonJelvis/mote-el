@@ -12,12 +12,14 @@
 
 (defun slick/insertion-filter (proc string)
   (when (buffer-live-p (process-buffer proc))
-    ;; Add to output list and execute if it parses:
-    (let* ((json-array-type 'list)
-           (output (json-read-from-string string)))
-      (unless (equal output '("Ok"))
-        (slick/log 'slick/output output)
-        (slick/execute output)))
+    ;; Process output line by line:
+    (dolist (line (split-string string "\n"))
+      (unless (equal line "")
+        (let* ((json-array-type 'list)
+               (output (json-read-from-string line)))
+          (unless (equal output '("Ok"))
+            (slick/log 'slick/output output)
+            (slick/execute output)))))
 
     ;; Write to the process buffer:
     (with-current-buffer (process-buffer proc)
@@ -42,6 +44,8 @@
 (defun slick/restart ()
   "Kills and then inits the slick process."
   (slick/stop)
+  (setq slick/output nil)
+  (setq slick/input nil)
   (slick/init))
 
 (defun slick/execute (command)
@@ -52,7 +56,10 @@ command isn't recognized, doesn't do anything."
      (goto-line x)
      (forward-char (- y 1)))
     (`("SetInfoWindow" ,text)
-     (x (message (format "%s" x)))))
+     (message text))
+    (`("Error" "nohole")
+     (message "No current hole."))
+    (x (message (format "%s" x)))))
 
 (defun slick/send (command)
   "Send the given string to the active slick process. Before
@@ -64,9 +71,12 @@ loads the current file."
   (process-send-string slick/process (concat (json-encode command) "\n")))
 
 (defun slick/command (command &rest args)
-  "Send a command as a list containing the name and arguments."
+  "Send a command as a list containing the name and
+arguments. Sleeps for 50ms after sending to let the output get
+processed."
   (slick/log 'slick/input (json-encode `(,command . ,args)))
-  (slick/send `(,command . ,args)))
+  (slick/send `(,command . ,args))
+  (sleep-for 0 50))
 
 (defun slick/client-state ()
   "Returns the current file and cursor position."
@@ -84,7 +94,21 @@ loads the current file."
   (slick/command "EnterHole" (slick/client-state)))
 
 (defun slick/next-hole ()
-  "Jumps to the next hole position and enters that hole, if any."
+  "Jumps to and enters the next hole position and enters that
+hole, if any."
   (interactive)
   (slick/command "NextHole" (slick/client-state))
   (slick/command "EnterHole" (slick/client-state)))
+
+(defun slick/prev-hole ()
+  "Jumps to and enters the previous hole position and enters that
+hole, if any."
+  (interactive)
+  (slick/command "PrevHole" (slick/client-state))
+  (slick/command "EnterHole" (slick/client-state)))
+
+(defun slick/get-env ()
+  "Gets the type of the currently entered hole and any relevant
+bindings in its scope."
+  (interactive)
+  (slick/command "GetEnv" (slick/client-state)))
