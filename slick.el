@@ -6,13 +6,17 @@
 (defvar slick/input '())
 (defvar slick/output '())
 
+;; TODO: This probably exists as a standard function somewhere...
+(defun slick/log (list element)
+  (set list (cons element (symbol-value list))))
+
 (defun slick/insertion-filter (proc string)
   (when (buffer-live-p (process-buffer proc))
     ;; Add to output list and execute if it parses:
     (let* ((json-array-type 'list)
            (output (json-read-from-string string)))
       (unless (equal output '("Ok"))
-        (add-to-list 'slick/output output)
+        (slick/log 'slick/output output)
         (slick/execute output)))
 
     ;; Write to the process buffer:
@@ -43,25 +47,25 @@
 (defun slick/execute (command)
   "Executes a command passed back from Slick. If the given
 command isn't recognized, doesn't do anything."
-  (message "executing")
   (pcase command
     (`("SetCursor" (,x ,y))
-     (message "Moving!")
      (goto-line x)
-     (forward-char (- y 1)))))
+     (forward-char (- y 1)))
+    (`("SetInfoWindow" ,text)
+     (x (message (format "%s" x)))))
 
-(defun slick/send (message)
+(defun slick/send (command)
   "Send the given string to the active slick process. Before
 sending the actual command, ensure the process is running and
 loads the current file."
   ;; Make sure the process is up and running:
   (slick/init)
   (process-send-string slick/process (concat (json-encode `("Load" ,(buffer-file-name))) "\n"))
-  (process-send-string slick/process (concat (json-encode message) "\n")))
+  (process-send-string slick/process (concat (json-encode command) "\n")))
 
 (defun slick/command (command &rest args)
   "Send a command as a list containing the name and arguments."
-  (add-to-list 'slick/input (json-encode `(,command . ,args)))
+  (slick/log 'slick/input (json-encode `(,command . ,args)))
   (slick/send `(,command . ,args)))
 
 (defun slick/client-state ()
@@ -80,6 +84,7 @@ loads the current file."
   (slick/command "EnterHole" (slick/client-state)))
 
 (defun slick/next-hole ()
-  "Jumps to the next hole position, if any."
+  "Jumps to the next hole position and enters that hole, if any."
   (interactive)
-  (slick/command "NextHole" (slick/client-state)))
+  (slick/command "NextHole" (slick/client-state))
+  (slick/command "EnterHole" (slick/client-state)))
