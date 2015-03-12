@@ -61,13 +61,17 @@ command isn't recognized, doesn't do anything."
      (message "No current hole."))
     (x (message (format "%s" x)))))
 
+(defun slick/load ()
+  (interactive)
+  "Loads the current file into the running slick process."
+  (process-send-string slick/process (concat (json-encode `("Load" ,(buffer-file-name))) "\n")))
+
 (defun slick/send (command)
   "Send the given string to the active slick process. Before
 sending the actual command, ensure the process is running and
 loads the current file."
   ;; Make sure the process is up and running:
   (slick/init)
-  (process-send-string slick/process (concat (json-encode `("Load" ,(buffer-file-name))) "\n"))
   (process-send-string slick/process (concat (json-encode command) "\n")))
 
 (defun slick/command (command &rest args)
@@ -83,11 +87,6 @@ processed."
   `(:path ,(buffer-file-name)
     :cursorPos (,(line-number-at-pos) ,(+ (current-column) 1))))
 
-(defun slick/load ()
-  (interactive)
-  "Loads the current file into the running slick process."
-  (slick/command "Load" (buffer-file-name)))
-
 (defun slick/enter-hole ()
   "Enters the hole at the current cursor position."
   (interactive)
@@ -97,6 +96,7 @@ processed."
   "Jumps to and enters the next hole position and enters that
 hole, if any."
   (interactive)
+  (slick/load)
   (slick/command "NextHole" (slick/client-state))
   (slick/command "EnterHole" (slick/client-state)))
 
@@ -104,6 +104,7 @@ hole, if any."
   "Jumps to and enters the previous hole position and enters that
 hole, if any."
   (interactive)
+  (slick/load)
   (slick/command "PrevHole" (slick/client-state))
   (slick/command "EnterHole" (slick/client-state)))
 
