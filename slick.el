@@ -113,3 +113,6 @@ hole, if any."
 bindings in its scope."
   (interactive)
   (slick/command "GetEnv" (slick/client-state)))
+
+(defun slick/case-further (identifier)
+  (slick/command "CaseFurther" identifier (slick/client-state)))
