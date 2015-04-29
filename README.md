@@ -1,8 +1,8 @@
-# Slick for Emacs
+# Mote for Emacs
 
-This is an Emacs minor mode for interacting with [slick][slick], a tool for interactive Haskell development by [Izaak Meckler][im].
+This is an Emacs minor mode for interacting with [mote][mote], a tool for interactive Haskell development by [Izaak Meckler][im].
 
 It's still very much in development and nowhere near usable!
 
-[slick]: https://github.com/imeckler/auto
-[im]: http://izaakmeckler.com/
+[mote]: https://github.com/imeckler/auto
+[im]: http://parametricity.com/
