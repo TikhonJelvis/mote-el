@@ -1,18 +1,18 @@
 (require 'json)
 
-(defvar slick/program "slick")
-(defvar slick/process nil)
+(defvar mote/program "mote")
+(defvar mote/process nil)
 
-(defvar slick/input '())
-(defvar slick/output '())
+(defvar mote/input '())
+(defvar mote/output '())
 
-(defvar slick/callbacks '())
+(defvar mote/callbacks '())
 
 ;; TODO: This probably exists as a standard function somewhere...
-(defun slick/log (list element)
+(defun mote/log (list element)
   (set list (cons element (symbol-value list))))
 
-(defun slick/insertion-filter (proc string)
+(defun mote/insertion-filter (proc string)
   (when (buffer-live-p (process-buffer proc))
     ;; Process output line by line:
     (dolist (line (split-string string "\n" t))
@@ -20,12 +20,12 @@
         (let* ((json-array-type 'list)
                (output (json-read-from-string line)))
           (unless (equal output '("Ok"))
-            (slick/log 'slick/output output)
-            (slick/execute output))))
-      (when slick/callbacks
-        (let ((fun (last slick/callbacks)))
+            (mote/log 'mote/output output)
+            (mote/execute output))))
+      (when mote/callbacks
+        (let ((fun (last mote/callbacks)))
           (funcall (car fun))
-          (setq slick/callbacks (butlast slick/callbacks)))))
+          (setq mote/callbacks (butlast mote/callbacks)))))
 
     ;; Write to the process buffer:
     (with-current-buffer (process-buffer proc)
@@ -36,28 +36,28 @@
           (set-marker (process-mark proc) (point)))
         (if moving (goto-char (process-mark proc)))))))
 
-(defun slick/init ()
-  "Starts the slick process if it isn't already running."
-  (unless (and slick/process (eq (process-status slick/process) 'run))
-    (setq slick/process (start-process "slick" "*slick IO*" slick/program))
-    (set-process-filter slick/process 'slick/insertion-filter)))
+(defun mote/init ()
+  "Starts the mote process if it isn't already running."
+  (unless (and mote/process (eq (process-status mote/process) 'run))
+    (setq mote/process (start-process "mote" "*mote IO*" mote/program))
+    (set-process-filter mote/process 'mote/insertion-filter)))
 
-(defun slick/stop ()
-  "Kills the slick process."
+(defun mote/stop ()
+  "Kills the mote process."
   ;; TODO: Kill the process more gracefully?
-  (when slick/process
-    (delete-process slick/process)
-    (setq slick/callbacks nil)))
+  (when mote/process
+    (delete-process mote/process)
+    (setq mote/callbacks nil)))
 
-(defun slick/restart ()
-  "Kills and then inits the slick process."
-  (slick/stop)
-  (setq slick/output nil)
-  (setq slick/input nil)
-  (slick/init))
+(defun mote/restart ()
+  "Kills and then inits the mote process."
+  (mote/stop)
+  (setq mote/output nil)
+  (setq mote/input nil)
+  (mote/init))
 
-(defun slick/execute (command)
-  "Executes a command passed back from Slick. If the given
+(defun mote/execute (command)
+  "Executes a command passed back from Mote. If the given
 command isn't recognized, doesn't do anything."
   (pcase command
     (`("SetCursor" (,x ,y))
@@ -70,58 +70,58 @@ command isn't recognized, doesn't do anything."
      (message "No current hole."))
     (x (message (format "%s" x)))))
 
-(defun slick/load ()
+(defun mote/load ()
   (interactive)
-  "Loads the current file into the running slick process."
-  (push '(lambda () nil) slick/callbacks)
-  (process-send-string slick/process (concat (json-encode `("Load" ,(buffer-file-name))) "\n")))
+  "Loads the current file into the running mote process."
+  (push '(lambda () nil) mote/callbacks)
+  (process-send-string mote/process (concat (json-encode `("Load" ,(buffer-file-name))) "\n")))
 
-(defun slick/send (command &optional callback)
-  "Send the given string to the active slick process. Before
+(defun mote/send (command &optional callback)
+  "Send the given string to the active mote process. Before
 sending the actual command, ensure the process is running and
 loads the current file."
   ;; Make sure the process is up and running:
-  (slick/init)
-  (process-send-string slick/process (concat (json-encode command) "\n"))
-  (push (or callback '(lambda () nil)) slick/callbacks))
+  (mote/init)
+  (process-send-string mote/process (concat (json-encode command) "\n"))
+  (push (or callback '(lambda () nil)) mote/callbacks))
 
-(defun slick/command (command args &optional callback)
+(defun mote/command (command args &optional callback)
   "Send a command as a list containing the name and
 arguments. Sleeps for 50ms after sending to let the output get
 processed."
-  (slick/log 'slick/input (json-encode `(,command . ,args)))
-  (slick/send `(,command . ,args) callback))
+  (mote/log 'mote/input (json-encode `(,command . ,args)))
+  (mote/send `(,command . ,args) callback))
 
-(defun slick/client-state ()
+(defun mote/client-state ()
   "Returns the current file and cursor position."
   `(:path ,(buffer-file-name)
     :cursorPos (,(line-number-at-pos) ,(+ (current-column) 1))))
 
-(defun slick/enter-hole ()
+(defun mote/enter-hole ()
   "Enters the hole at the current cursor position."
   (interactive)
-  (slick/command "EnterHole" (list (slick/client-state))))
+  (mote/command "EnterHole" (list (mote/client-state))))
 
-(defun slick/next-hole ()
+(defun mote/next-hole ()
   "Jumps to and enters the next hole position and enters that
 hole, if any."
   (interactive)
-  (slick/load)
-  (slick/command "NextHole" (list (slick/client-state)) (indirect-function 'slick/enter-hole)))
+  (mote/load)
+  (mote/command "NextHole" (list (mote/client-state)) (indirect-function 'mote/enter-hole)))
 
-(defun slick/prev-hole ()
+(defun mote/prev-hole ()
   "Jumps to and enters the previous hole position and enters that
 hole, if any."
   (interactive)
-  (slick/load)
-  (slick/command "PrevHole" (list (slick/client-state)))
-  (slick/enter-hole))
+  (mote/load)
+  (mote/command "PrevHole" (list (mote/client-state)))
+  (mote/enter-hole))
 
-(defun slick/get-env ()
+(defun mote/get-env ()
   "Gets the type of the currently entered hole and any relevant
 bindings in its scope."
   (interactive)
-  (slick/command "GetEnv" (list (slick/client-state))))
+  (mote/command "GetEnv" (list (mote/client-state))))
 
-(defun slick/case-further (identifier)
-  (slick/command "CaseFurther" identifier (list (slick/client-state))))
+(defun mote/case-further (identifier)
+  (mote/command "CaseFurther" identifier (list (mote/client-state))))
