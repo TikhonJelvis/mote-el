@@ -8,6 +8,8 @@
 
 (defvar mote/callbacks '())
 
+(defvar mote/default-options '(:sendOutputAsData :json-false :withSuggestions :json-false))
+
 ;; TODO: This probably exists as a standard function somewhere...
 (defun mote/log (list element)
   (set list (cons element (symbol-value list))))
@@ -117,11 +119,11 @@ hole, if any."
   (mote/command "PrevHole" (list (mote/client-state)))
   (mote/enter-hole))
 
-(defun mote/get-env ()
+(defun mote/hole-info ()
   "Gets the type of the currently entered hole and any relevant
 bindings in its scope."
   (interactive)
-  (mote/command "GetEnv" (list (mote/client-state))))
+  (mote/command "GetHoleInfo" (list (mote/client-state) mote/default-options)))
 
 (defun mote/case-further (identifier)
   (mote/command "CaseFurther" identifier (list (mote/client-state))))
