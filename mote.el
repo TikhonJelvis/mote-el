@@ -70,7 +70,28 @@ command isn't recognized, doesn't do anything."
      (message text))
     (`("Error" "nohole")
      (message "No current hole."))
+    (`("Replace" (,start ,end) ,file ,contents)
+     (mote/replace-region (mote/parse-pos start) (mote/parse-pos end) file contents))
     (x (message (format "%s" x)))))
+
+(defun mote/parse-pos (pos)
+  "Given a pair containing a line and column number, returns an
+Emacs position.
+
+Subtracts 1 from the column to account for different indexing
+compared to mote itself."
+  (save-excursion
+    (goto-line (car pos))
+    (move-to-column (- (cadr pos) 1))
+    (point)))
+
+(defun mote/replace-region (start end file contents)
+  "Given Emacs buffer positions and a file, replace the region
+between the positions with the given content text."
+  (save-excursion
+    (goto-char start)
+    (delete-region start end)
+    (insert contents)))
 
 (defun mote/load ()
   (interactive)
@@ -126,4 +147,5 @@ bindings in its scope."
   (mote/command "GetHoleInfo" (list (mote/client-state) mote/default-options)))
 
 (defun mote/case-further (identifier)
-  (mote/command "CaseFurther" identifier (list (mote/client-state))))
+  "Case expands the given identifier."
+  (mote/command "CaseFurther" (list identifier (mote/client-state))))
