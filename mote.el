@@ -149,3 +149,17 @@ bindings in its scope."
 (defun mote/case-further (identifier)
   "Case expands the given identifier."
   (mote/command "CaseFurther" (list identifier (mote/client-state))))
+
+(defun mote/identifier-at-point ()
+  "Gets the Haskell identifier at the current point, if any. This
+is basically a custom version of `word-at-point' which accounts
+for things like primes (x')."
+  (save-excursion
+    (let ((start (progn (forward-char) (re-search-backward "\\_<") (point)))
+          (end (progn (re-search-forward "\\_>") (point))))
+      (buffer-substring-no-properties start end))))
+
+(defun mote/case-at-point ()
+  "Tries to case expand the identifier at point, if possible."
+  (interactive)
+  (mote/case-further (mote/identifier-at-point)))
