@@ -72,6 +72,9 @@ command isn't recognized, doesn't do anything."
      (message "No current hole."))
     (`("Replace" (,start ,end) ,file ,contents)
      (mote/replace-region (mote/parse-pos start) (mote/parse-pos end) file contents))
+    (`("Insert" ,start ,file ,contents)
+     (let ((end (list (car start) (+ (cadr start) 1))))
+       (mote/replace-region (mote/parse-pos start) (mote/parse-pos end) file contents)))
     (x (message (format "%s" x)))))
 
 (defun mote/parse-pos (pos)
@@ -163,3 +166,8 @@ for things like primes (x')."
   "Tries to case expand the identifier at point, if possible."
   (interactive)
   (mote/case-further (mote/identifier-at-point)))
+
+(defun mote/case-on (name)
+  "Tries to insert a case statement matching on the given expression."
+  (interactive "sExpression to match: ")
+  (mote/command "CaseOn" (list name (mote/client-state))))
