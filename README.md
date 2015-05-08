@@ -24,6 +24,8 @@ Before you use any other commands, you have to be in a hole. One of the followin
 
   * `mote/prev-hole` - jumps to the first hole behind the cursor
 
+  * `mote/enter-hole` - enters the hole the cursor is currently over. Ideally, this should not be necessary because the first two commands do it automatically, but currently they sometimes fail to enter the hole ("No hole found." error), so you have to do it explicitly.
+
 Once you're in a hole, you can do a few different things:
 
   * `mote/hole-info` - displays the expected type ("goal") and relevant bindings in scope
