@@ -100,6 +100,7 @@ between the positions with the given content text."
 (defun mote/load ()
   (interactive)
   "Loads the current file into the running mote process."
+  (save-buffer)
   (push '(lambda () nil) mote/callbacks)
   (process-send-string mote/process (concat (json-encode `("Load" ,(buffer-file-name))) "\n")))
 
@@ -176,3 +177,5 @@ for things like primes (x')."
   "Tries to insert a case statement matching on the given expression."
   (interactive "sExpression to match: ")
   (mote/command "CaseOn" (list name (mote/client-state))))
+
+(provide 'mote)
