@@ -40,6 +40,7 @@
 
 (defun mote/init ()
   "Starts the mote process if it isn't already running."
+  (interactive)
   (unless (and mote/process (eq (process-status mote/process) 'run))
     (setq mote/process (start-process "mote" "*mote IO*" mote/program))
     (set-process-filter mote/process 'mote/insertion-filter)))
