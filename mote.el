@@ -162,6 +162,10 @@ for things like primes (x')."
           (end (progn (re-search-forward "\\_>") (point))))
       (buffer-substring-no-properties start end))))
 
+(defun mote/refine (name)
+  "Refines the hole by applying the given function to it."
+  (mote/command "Refine" (list name (mote/client-state))))
+
 (defun mote/case-at-point ()
   "Tries to case expand the identifier at point, if possible."
   (interactive)
