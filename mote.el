@@ -199,4 +199,14 @@ for things like primes (x')."
   (interactive "sExpression to match: ")
   (mote/command "CaseOn" (list name (mote/client-state))))
 
+(defun mote/default-keybindings ()
+  "Sets the default keybindings for the mote commands."
+  (local-set-key (kbd "C-c C-n") 'mote/next-hole)
+  (local-set-key (kbd "C-c C-p") 'mote/prev-hole)
+  (local-set-key (kbd "C-c C-e") 'mote/enter-hole)
+  (local-set-key (kbd "C-c C-/") 'mote/hole-info)
+  (local-set-key (kbd "C-c C-f") 'mote/case-at-point)
+  (local-set-key (kbd "C-c C-o") 'mote/case-on)
+  (local-set-key (kbd "C-c <C-return>") 'mote/refine))
+
 (provide 'mote)
