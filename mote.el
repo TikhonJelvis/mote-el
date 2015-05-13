@@ -14,6 +14,17 @@
 (defun mote/log (list element)
   (set list (cons element (symbol-value list))))
 
+(defun mote/write-to-process-buffer (string)
+  "Writes the given string to the process buffer."
+  (let ((proc mote/process))
+    (with-current-buffer (process-buffer proc)
+      (let ((moving (= (point) (process-mark proc))))
+        (save-excursion
+          (goto-char (process-mark proc))
+          (insert string)
+          (set-marker (process-mark proc) (point)))
+        (if moving (goto-char (process-mark proc)))))))
+
 (defun mote/insertion-filter (proc string)
   (when (buffer-live-p (process-buffer proc))
     ;; Process output line by line:
@@ -23,20 +34,13 @@
                (output (json-read-from-string line)))
           (unless (equal output '("Ok"))
             (mote/log 'mote/output output)
-            (mote/execute output))))
+            (mote/execute output))
+          (mote/write-to-process-buffer line)))
       (when mote/callbacks
         (let ((fun (last mote/callbacks)))
+          (mote/write-to-process-buffer "\n>>callback\n")
           (funcall (car fun))
-          (setq mote/callbacks (butlast mote/callbacks)))))
-
-    ;; Write to the process buffer:
-    (with-current-buffer (process-buffer proc)
-      (let ((moving (= (point) (process-mark proc))))
-        (save-excursion
-          (goto-char (process-mark proc))
-          (insert string)
-          (set-marker (process-mark proc) (point)))
-        (if moving (goto-char (process-mark proc)))))))
+          (setq mote/callbacks (butlast mote/callbacks)))))))
 
 (defun mote/init ()
   "Starts the mote process if it isn't already running."
@@ -97,12 +101,14 @@ between the positions with the given content text."
     (delete-region start end)
     (insert contents)))
 
-(defun mote/load ()
+(defun mote/load (&optional callback)
   (interactive)
   "Loads the current file into the running mote process."
   (save-buffer)
-  (push '(lambda () nil) mote/callbacks)
-  (process-send-string mote/process (concat (json-encode `("Load" ,(buffer-file-name))) "\n")))
+  (push (or callback '(lambda () nil)) mote/callbacks)
+  (let ((command (concat (json-encode `("Load" ,(buffer-file-name))) "\n")))
+    (mote/write-to-process-buffer (concat "> " command))
+    (process-send-string mote/process command)))
 
 (defun mote/send (command &optional callback)
   "Send the given string to the active mote process. Before
@@ -110,8 +116,9 @@ sending the actual command, ensure the process is running and
 loads the current file."
   ;; Make sure the process is up and running:
   (mote/init)
-  (process-send-string mote/process (concat (json-encode command) "\n"))
-  (push (or callback '(lambda () nil)) mote/callbacks))
+  (mote/write-to-process-buffer (concat "> " (json-encode command) "\n"))
+  (push (or callback '(lambda () nil)) mote/callbacks)
+  (process-send-string mote/process (concat (json-encode command) "\n")))
 
 (defun mote/command (command args &optional callback)
   "Send a command as a list containing the name and
@@ -134,16 +141,18 @@ processed."
   "Jumps to and enters the next hole position and enters that
 hole, if any."
   (interactive)
-  (mote/load)
-  (mote/command "NextHole" (list (mote/client-state)) (indirect-function 'mote/enter-hole)))
+  (mote/load
+   (lambda () (mote/command "NextHole" (list (mote/client-state))
+     (indirect-function 'mote/enter-hole)))))
 
 (defun mote/prev-hole ()
   "Jumps to and enters the previous hole position and enters that
 hole, if any."
   (interactive)
-  (mote/load)
-  (mote/command "PrevHole" (list (mote/client-state)))
-  (mote/enter-hole))
+  (mote/load
+   (lambda ()
+     (mote/command "PrevHole" (list (mote/client-state))
+       (indirect-function 'mote/enter-hole)))))
 
 (defun mote/hole-info ()
   "Gets the type of the currently entered hole and any relevant
