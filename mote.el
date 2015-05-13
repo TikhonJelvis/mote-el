@@ -2,13 +2,14 @@
 
 (defvar mote/program "mote")
 (defvar mote/process nil)
+(defvar mote/info-buffer-name "*mote*")
 
 (defvar mote/input '())
 (defvar mote/output '())
 
 (defvar mote/callbacks '())
 
-(defvar mote/default-options '(:sendOutputAsData :json-false :withSuggestions :json-false))
+(defvar mote/default-options '(:sendOutputAsData :json-false :withSuggestions t))
 
 ;; TODO: This probably exists as a standard function somewhere...
 (defun mote/log (list element)
@@ -24,6 +25,17 @@
           (insert string)
           (set-marker (process-mark proc) (point)))
         (if moving (goto-char (process-mark proc)))))))
+
+(defun mote/set-info-window (string)
+  "If the input is multiple lines, replaces the contents of the
+*mote* buffer with the given string and pops to it. Otherwise
+just echoes it in minibuffer."
+  (if (string-match ".*\n.*" string)
+   (progn (pop-to-buffer mote/info-buffer-name)
+          (erase-buffer)
+          (insert string)
+          (beginning-of-buffer))
+   (message string)))
 
 (defun mote/insertion-filter (proc string)
   (when (buffer-live-p (process-buffer proc))
@@ -72,7 +84,7 @@ command isn't recognized, doesn't do anything."
      (goto-line x)
      (forward-char (- y 1)))
     (`("SetInfoWindow" ,text)
-     (message text))
+     (mote/set-info-window text))
     (`("Error" "nohole")
      (message "No current hole."))
     (`("Replace" (,start ,end) ,file ,contents)
