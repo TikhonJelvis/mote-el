@@ -129,8 +129,9 @@ processed."
 
 (defun mote/client-state ()
   "Returns the current file and cursor position."
-  `(:path ,(buffer-file-name)
-    :cursorPos (,(line-number-at-pos) ,(+ (current-column) 1))))
+  (let ((col (- (point) (line-beginning-position))))
+    `(:path ,(buffer-file-name)
+      :cursorPos (,(line-number-at-pos) ,(+ col 1)))))
 
 (defun mote/enter-hole ()
   "Enters the hole at the current cursor position."
