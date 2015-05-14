@@ -4,16 +4,9 @@
 (defvar mote/process nil)
 (defvar mote/info-buffer-name "*mote*")
 
-(defvar mote/input '())
-(defvar mote/output '())
-
 (defvar mote/callbacks '())
 
 (defvar mote/default-options '(:sendOutputAsData :json-false :withSuggestions t))
-
-;; TODO: This probably exists as a standard function somewhere...
-(defun mote/log (list element)
-  (set list (cons element (symbol-value list))))
 
 (defun mote/write-to-process-buffer (string)
   "Writes the given string to the process buffer."
@@ -45,7 +38,6 @@ just echoes it in minibuffer."
         (let* ((json-array-type 'list)
                (output (json-read-from-string line)))
           (unless (equal output '("Ok"))
-            (mote/log 'mote/output output)
             (mote/execute output))
           (mote/write-to-process-buffer line)))
       (when mote/callbacks
@@ -71,8 +63,6 @@ just echoes it in minibuffer."
 (defun mote/restart ()
   "Kills and then inits the mote process."
   (mote/stop)
-  (setq mote/output nil)
-  (setq mote/input nil)
   (mote/init))
 
 (defun mote/execute (command)
@@ -136,7 +126,6 @@ loads the current file."
   "Send a command as a list containing the name and
 arguments. Sleeps for 50ms after sending to let the output get
 processed."
-  (mote/log 'mote/input (json-encode `(,command . ,args)))
   (mote/send `(,command . ,args) callback))
 
 (defun mote/client-state ()
