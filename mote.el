@@ -42,7 +42,6 @@ just echoes it in minibuffer."
           (mote/write-to-process-buffer line)))
       (when mote/callbacks
         (let ((fun (last mote/callbacks)))
-          (mote/write-to-process-buffer "\n>>callback\n")
           (funcall (car fun))
           (setq mote/callbacks (butlast mote/callbacks)))))))
 
