@@ -184,7 +184,7 @@ for things like primes (x')."
       (buffer-substring-no-properties start end))))
 
 (defun mote/refine (name)
-  (interactive "sFunction:")
+  (interactive "sExpression:")
   "Refines the hole by applying the given function to it."
   (mote/command "Refine" (list name (mote/client-state))))
 
