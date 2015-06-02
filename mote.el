@@ -19,12 +19,18 @@
           (set-marker (process-mark proc) (point)))
         (if moving (goto-char (process-mark proc)))))))
 
+(defun mote/display-buffer (buffer-or-name)
+  "Display the given buffer in another window without selecting
+it. If the buffer doesn't exist, create it."
+  (let ((buffer (get-buffer-create buffer-or-name)))
+    (display-buffer buffer)))
+
 (defun mote/set-info-window (string)
   "If the input is multiple lines, replaces the contents of the
 *mote* buffer with the given string and pops to it. Otherwise
 just echoes it in minibuffer."
   (if (string-match ".*\n.*" string)
-   (progn (display-buffer mote/info-buffer-name nil t)
+   (progn (mote/display-buffer mote/info-buffer-name)
           (with-current-buffer mote/info-buffer-name
             (erase-buffer)
             (insert string)
