@@ -24,10 +24,11 @@
 *mote* buffer with the given string and pops to it. Otherwise
 just echoes it in minibuffer."
   (if (string-match ".*\n.*" string)
-   (progn (pop-to-buffer mote/info-buffer-name)
-          (erase-buffer)
-          (insert string)
-          (beginning-of-buffer))
+   (progn (display-buffer mote/info-buffer-name nil t)
+          (with-current-buffer mote/info-buffer-name
+            (erase-buffer)
+            (insert string)
+            (beginning-of-buffer)))
    (message string)))
 
 (defun mote/insertion-filter (proc string)
