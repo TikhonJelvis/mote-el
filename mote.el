@@ -46,15 +46,17 @@ just echoes it in minibuffer."
                (output (json-read-from-string line)))
           (unless (equal output '("Ok"))
             (mote/execute output))
-          (mote/write-to-process-buffer line)))
+          (mote/write-to-process-buffer (concat line "\n"))))
       (when mote/callbacks
         (let ((fun (last mote/callbacks)))
-          (funcall (car fun))
-          (setq mote/callbacks (butlast mote/callbacks)))))))
+          (when fun
+            (funcall (car fun))
+            (setq mote/callbacks (butlast mote/callbacks))))))))
 
 (defun mote/init ()
   "Starts the mote process if it isn't already running."
   (interactive)
+  (setq mote/callbacks '())
   (unless (and mote/process (eq (process-status mote/process) 'run))
     (setq mote/process (start-process "mote" "*mote IO*" mote/program))
     (set-process-filter mote/process 'mote/insertion-filter)))
